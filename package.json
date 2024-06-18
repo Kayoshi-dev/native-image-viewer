@@ -1,0 +1,41 @@
+{
+  "name": "shicho",
+  "version": "0.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "tauri": "tauri"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^0.10.14",
+    "@tauri-apps/api": "2.0.0-beta.13",
+    "@tauri-apps/plugin-dialog": "2.0.0-beta.5",
+    "@tauri-apps/plugin-fs": "2.0.0-beta.5",
+    "@tauri-apps/plugin-shell": "2.0.0-beta.6",
+    "face-api.js": "^0.22.2",
+    "lucide-svelte": "^0.395.0",
+    "sass": "^1.77.5"
+  },
+  "devDependencies": {
+    "@sveltejs/enhanced-img": "^0.3.0",
+    "@sveltejs/adapter-static": "^3.0.2",
+    "@sveltejs/kit": "^2.5.15",
+    "@sveltejs/vite-plugin-svelte": "^3.1.1",
+    "@tauri-apps/cli": "2.0.0-beta.20",
+    "autoprefixer": "^10.4.19",
+    "internal-ip": "^7.0.0",
+    "postcss": "^8.4.38",
+    "svelte": "^4.2.18",
+    "svelte-check": "^3.8.0",
+    "tailwindcss": "^3.4.4",
+    "tslib": "^2.6.3",
+    "typescript": "^5.4.5",
+    "vite": "^5.3.1"
+  }
+}
