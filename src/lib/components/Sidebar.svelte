@@ -1,7 +1,15 @@
 <script lang="ts">
-  import { dirPaths } from "$lib/stores/DirectoryStore";
+  import { page } from "$app/stores";
+  import { dirPaths, getSlug } from "$lib/stores/DirectoryStore";
   import { X, Folder } from "lucide-svelte";
   import { onMount } from "svelte";
+
+  // Improve that part of the code later
+  let activeSlug = "";
+  $: {
+    $page.url.hash;
+    activeSlug = getSlug();
+  }
 
   onMount(() => {
     const pathsList = localStorage.getItem("paths");
@@ -56,7 +64,10 @@
         <li>
           <a
             href={`#${dirPath.slug}`}
-            class="flex items-center justify-between group p-1 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+            class="flex items-center justify-between group p-1 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 {dirPath.slug ===
+            activeSlug
+              ? 'bg-gray-200 dark:bg-gray-700'
+              : ''}"
           >
             <span class="flex items-center">
               <Folder size={16} />

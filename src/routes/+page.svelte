@@ -7,6 +7,7 @@
   import { dirPaths } from "$lib/stores/DirectoryStore";
   import { FaceDetector, FilesetResolver } from "@mediapipe/tasks-vision";
   import { page } from "$app/stores";
+  import { openLightbox } from "$lib/stores/LightboxStore";
 
   const nameSlug = (name: string) => name.toLowerCase().replace(/\s/g, "-");
 
@@ -48,7 +49,7 @@
 
     // Get only images, this could be png, jpg, jpeg, etc.
     const imagesList = fileList.filter((file) =>
-      file.name.match(/\.(jpe?g|png)$/i)
+      file.name.match(/\.(jpe?g|png|webp)$/i)
     );
 
     const imagesListPaths = await Promise.all(
@@ -107,7 +108,6 @@
   <h1 class="text-2xl font-semibold text-gray-900 dark:text-white mb-3">
     Recent images
   </h1>
-  {$page.url}
   <div
     class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700"
   >
@@ -115,12 +115,11 @@
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       {#each images as image}
-        <!-- <enhanced:img src={convertFileSrc(image)} alt="some alt text" /> -->
         <img
           class="rounded-md cursor-pointer w-40 h-40 object-cover"
           alt="My dynamically loaded img"
           src={convertFileSrc(image)}
-          on:click={(e) => displayImageDetections(e)}
+          on:click={() => openLightbox(convertFileSrc(image))}
         />
       {/each}
     </div>
