@@ -1,11 +1,9 @@
 <script lang="ts">
-  import { onMount, tick } from "svelte";
-  import { convertFileSrc } from "@tauri-apps/api/core";
+  import { convertFileSrc, invoke } from "@tauri-apps/api/core";
   import { open } from "@tauri-apps/plugin-dialog";
   import { readDir } from "@tauri-apps/plugin-fs";
   import { path } from "@tauri-apps/api";
   import { dirPaths } from "$lib/stores/DirectoryStore";
-  import { FaceDetector, FilesetResolver } from "@mediapipe/tasks-vision";
   import { page } from "$app/stores";
   import { openLightbox } from "$lib/stores/LightboxStore";
 
@@ -13,38 +11,17 @@
 
   let images: string[] = [];
 
-  let faceDetector: FaceDetector;
-  let runningMode = "IMAGE" as const;
-
-  const initializefaceDetector = async () => {
-    const vision = await FilesetResolver.forVisionTasks(
-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
-    );
-    faceDetector = await FaceDetector.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite`,
-        delegate: "GPU",
-      },
-      runningMode,
-    });
-  };
-
-  onMount(async () => {
-    initializefaceDetector();
-  });
-
   $: {
     const dirName = $dirPaths.find(
       (path) => path.slug === $page.url.hash.substring(1)
     );
-    console.log(dirName);
+
     if (dirName) {
       loadFolder(dirName.path);
     }
   }
 
   const loadFolder = async (dir: string) => {
-    console.log("dir", dir);
     const fileList = await readDir(dir);
 
     // Get only images, this could be png, jpg, jpeg, etc.
@@ -58,6 +35,14 @@
         return filePath;
       })
     );
+
+    imagesListPaths.forEach(async (imagePath) => {
+      const metadata = (await invoke("get_metadata", {
+        imagePath,
+      })) as MediaMetadata;
+
+      console.log(metadata);
+    });
 
     images = [...imagesListPaths];
   };
@@ -82,26 +67,6 @@
 
     // Redirect to the new folder
   };
-
-  async function displayImageDetections(event: Event) {
-    const myImage = event.target as HTMLImageElement;
-
-    const img = new Image();
-    img.src = myImage.src;
-    img.crossOrigin = "anonymous";
-
-    img.onload = async () => {
-      const [detection] = faceDetector.detect(img).detections;
-
-      console.log(
-        "Confidence: " +
-          Math.round(
-            parseFloat(detection.categories[0].score.toString()) * 100
-          ) +
-          "%."
-      );
-    };
-  }
 </script>
 
 <div class="p-4 sm:ml-64">
@@ -115,11 +80,13 @@
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       {#each images as image}
+        {@const imgSrc = convertFileSrc(image)}
+
         <img
           class="rounded-md cursor-pointer w-40 h-40 object-cover"
           alt="My dynamically loaded img"
-          src={convertFileSrc(image)}
-          on:click={() => openLightbox(convertFileSrc(image))}
+          src={imgSrc}
+          on:click={() => openLightbox(imgSrc)}
         />
       {/each}
     </div>
