@@ -6,7 +6,7 @@
 </script>
 
 <Sidebar />
-<main class="mt-2">
+<main class="dark:bg-gray-700">
   <Searchbar />
   <slot />
 </main>
