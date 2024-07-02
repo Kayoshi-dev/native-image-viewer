@@ -6,10 +6,11 @@
   import { dirPaths } from "$lib/stores/DirectoryStore";
   import { page } from "$app/stores";
   import { openLightbox } from "$lib/stores/LightboxStore";
+  import type { Image, MediaMetadata } from "$lib/types/ImageType";
 
   const nameSlug = (name: string) => name.toLowerCase().replace(/\s/g, "-");
 
-  let images: string[] = [];
+  let images: Image[] = [];
 
   $: {
     const dirName = $dirPaths.find(
@@ -25,26 +26,36 @@
     const fileList = await readDir(dir);
 
     // Get only images, this could be png, jpg, jpeg, etc.
-    const imagesList = fileList.filter((file) =>
-      file.name.match(/\.(jpe?g|png|webp)$/i)
-    );
+    const imagesWithMetadata = (
+      await Promise.all(
+        fileList
+          .filter((file) => file.name.match(/\.(jpe?g|png|webp)$/i))
+          .map(async (file) => {
+            try {
+              // Here we keep the original path to the image, because it's used in the Rust Backend to get the metadata
+              const originalImagePath = await path.join(dir, file.name);
+              const fileSrc = convertFileSrc(originalImagePath);
+              const data = await invoke("get_metadata", {
+                imagePath: originalImagePath,
+              });
 
-    const imagesListPaths = await Promise.all(
-      imagesList.map(async (file) => {
-        const filePath = await path.join(dir, file.name);
-        return filePath;
-      })
-    );
+              if (data !== "No data") {
+                const metadata = JSON.parse(data as string) as MediaMetadata;
 
-    imagesListPaths.forEach(async (imagePath) => {
-      const metadata = (await invoke("get_metadata", {
-        imagePath,
-      })) as MediaMetadata;
+                return { imagePath: fileSrc, metadata };
+              }
+              return { imagePath: fileSrc, metadata: {} as MediaMetadata };
+            } catch (error) {
+              // Log the error and continue
+              console.error(`Failed to process ${file.name}:`, error);
+            }
+          })
+      )
+    ).filter((item) => item !== undefined);
 
-      console.log(metadata);
-    });
+    images = [...imagesWithMetadata];
 
-    images = [...imagesListPaths];
+    console.log(images);
   };
 
   const openDirectoryPicker = async () => {
@@ -80,13 +91,11 @@
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       {#each images as image}
-        {@const imgSrc = convertFileSrc(image)}
-
         <img
           class="rounded-md cursor-pointer w-40 h-40 object-cover"
           alt="My dynamically loaded img"
-          src={imgSrc}
-          on:click={() => openLightbox(imgSrc)}
+          src={image.imagePath}
+          on:click={() => openLightbox(image)}
         />
       {/each}
     </div>

@@ -3587,6 +3587,7 @@ name = "shicho"
 version = "0.0.0"
 dependencies = [
  "kamadak-exif",
+ "once_cell",
  "reqwest",
  "serde",
  "serde_json",

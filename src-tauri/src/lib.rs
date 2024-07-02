@@ -1,4 +1,14 @@
 use exif::{In, Tag};
+use once_cell::sync::Lazy;
+use reqwest::Client;
+
+// Use once_cell to create a static HTTP client, so we don't have to create a new one every time
+static HTTP_CLIENT: Lazy<Client> = Lazy::new(|| {
+    Client::builder()
+        .user_agent("native-image-builder-shicho")
+        .build()
+        .expect("Failed to create HTTP client")
+});
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -27,22 +37,22 @@ fn convert_to_decimal(latitude: &str) -> Result<f64, &'static str> {
 }
 
 // Reverse geocode the latitude and longitude to get the location
-fn reverse_geocode(latitude: f64, longitude: f64) -> Result<String, reqwest::Error> {
+async fn reverse_geocode(latitude: f64, longitude: f64) -> Result<String, reqwest::Error> {
     // Need to improve this as it can send too many requests.
     let url = format!(
         "https://nominatim.openstreetmap.org/reverse?format=json&lat={}&lon={}",
         latitude, longitude
     );
 
-    let response = reqwest::blocking::get(&url)?.text()?;
+    let response = HTTP_CLIENT.get(url).send().await?.text().await?;
 
     println!("Response: {:?}", response);
 
-    Ok(response)
+    Ok(response.to_string())
 }
 
 #[tauri::command]
-fn get_metadata(image_path: String) -> Result<String, tauri::Error> {
+async fn get_metadata(image_path: String) -> Result<String, tauri::Error> {
     println!("Image path: {:?}", image_path);
 
     let file = std::fs::File::open(image_path)?;
@@ -69,6 +79,15 @@ fn get_metadata(image_path: String) -> Result<String, tauri::Error> {
     )
     .unwrap_or(0.0);
 
-    let location = reverse_geocode(latitude, longitude).unwrap_or_default();
-    return Ok(location);
+    println!("Latitude: {:?}", latitude);
+    println!("Longitude: {:?}", longitude);
+
+    if latitude != 0.0 && longitude != 0.0 {
+        let location = reverse_geocode(latitude, longitude)
+            .await
+            .unwrap_or_default();
+        return Ok(location);
+    }
+
+    return Ok("No data".to_string());
 }

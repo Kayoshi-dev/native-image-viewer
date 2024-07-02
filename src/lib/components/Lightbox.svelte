@@ -41,10 +41,18 @@
     </button>
     <img
       class="max-w-4/5 max-h-full object-contain"
-      src={$currentImage}
+      src={$currentImage.imagePath}
       alt="truc"
       on:click={displayImageDetections}
     />
+    {#if $currentImage.metadata && $currentImage.metadata.address}
+      <p class="fixed top-0 left-0 text-3xl text-white font-bold">
+        {$currentImage.metadata.address.city ||
+          $currentImage.metadata.address.village}, {$currentImage.metadata
+          .address.country}
+      </p>
+    {/if}
+    <p class="text-3xl"></p>
   </dialog>
   <button class="fixed top-1/2 right-0 text-white">
     <ArrowRight />
