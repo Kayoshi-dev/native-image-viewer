@@ -7,6 +7,7 @@
   import { page } from "$app/stores";
   import { openLightbox } from "$lib/stores/LightboxStore";
   import type { Image, MediaMetadata } from "$lib/types/ImageType";
+  import { basename } from "@tauri-apps/api/path";
 
   const nameSlug = (name: string) => name.toLowerCase().replace(/\s/g, "-");
 
@@ -59,16 +60,19 @@
   };
 
   const openDirectoryPicker = async () => {
-    const dirName = (await open({
+    const directory = (await open({
       directory: true,
     })) as string;
 
+    const dirName = await basename(directory);
+    const dirSlug = nameSlug(dirName);
+
     dirPaths.update((paths) => {
-      if (!paths.find((path) => path.path === dirName)) {
+      if (!paths.find((path) => path.path === directory)) {
         paths.push({
-          name: dirName.split("/").pop() as string,
-          slug: nameSlug(dirName.split("/").pop() as string),
-          path: dirName,
+          name: dirName,
+          slug: dirSlug,
+          path: directory,
         });
 
         localStorage.setItem("paths", JSON.stringify(paths));
