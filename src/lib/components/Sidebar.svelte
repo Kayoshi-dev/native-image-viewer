@@ -1,8 +1,10 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { dirPaths, getSlug } from "$lib/stores/DirectoryStore";
-  import { X, Folder } from "lucide-svelte";
+  import { X, Folder, FolderSearch } from "lucide-svelte";
   import { onMount } from "svelte";
+  import { open } from "@tauri-apps/plugin-dialog";
+  import { basename } from "@tauri-apps/api/path";
 
   // Improve that part of the code later
   let activeSlug = "";
@@ -27,6 +29,32 @@
       dirPaths.set(paths);
       localStorage.setItem("paths", JSON.stringify(paths));
     };
+  };
+
+  const nameSlug = (name: string) => name.toLowerCase().replace(/\s/g, "-");
+
+  const openDirectoryPicker = async () => {
+    const directory = (await open({
+      directory: true,
+    })) as string;
+
+    const dirName = await basename(directory);
+    const dirSlug = nameSlug(dirName);
+
+    dirPaths.update((paths) => {
+      if (!paths.find((path) => path.path === directory)) {
+        paths.push({
+          name: dirName,
+          slug: dirSlug,
+          path: directory,
+        });
+
+        localStorage.setItem("paths", JSON.stringify(paths));
+      }
+      return paths;
+    });
+
+    // Redirect to the new folder
   };
 </script>
 
@@ -60,6 +88,17 @@
 >
   <div class="h-full px-3 py-4 overflow-y-auto bg-gray-50 dark:bg-gray-800">
     <ul class="space-y-2 font-medium">
+      <li>
+        <button
+          on:click={openDirectoryPicker}
+          class="w-full flex items-center justify-center group p-1 border-2 rounded-md border-dashed transition-all ease-in-out duration-300 border-gray-300 hover:border-blue-500 text-gray-500 hover:text-blue-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          <span class="flex items-center">
+            <FolderSearch size={16} />
+            <span class="ms-3">Add a new folder</span>
+          </span>
+        </button>
+      </li>
       {#each $dirPaths as dirPath}
         <li>
           <a

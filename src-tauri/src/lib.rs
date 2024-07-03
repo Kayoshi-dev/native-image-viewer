@@ -1,4 +1,6 @@
 use exif::{In, Tag};
+mod hash_file;
+use hash_file::hash_image_content;
 use once_cell::sync::Lazy;
 use reqwest::Client;
 
@@ -17,6 +19,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_persisted_scope::init())
+        .plugin(tauri_plugin_sql::Builder::default().build())
         .invoke_handler(tauri::generate_handler![get_metadata])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -55,7 +58,7 @@ async fn reverse_geocode(latitude: f64, longitude: f64) -> Result<String, reqwes
 async fn get_metadata(image_path: String) -> Result<String, tauri::Error> {
     println!("Image path: {:?}", image_path);
 
-    let file = std::fs::File::open(image_path)?;
+    let file = std::fs::File::open(image_path.clone())?;
     let mut bufreader = std::io::BufReader::new(&file);
 
     let exifreader = exif::Reader::new();
@@ -81,6 +84,9 @@ async fn get_metadata(image_path: String) -> Result<String, tauri::Error> {
 
     println!("Latitude: {:?}", latitude);
     println!("Longitude: {:?}", longitude);
+
+    let hashed_image = hash_image_content(image_path);
+    println!("Hashed image: {:?}", hashed_image);
 
     if latitude != 0.0 && longitude != 0.0 {
         let location = reverse_geocode(latitude, longitude)
