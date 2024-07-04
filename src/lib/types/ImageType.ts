@@ -3,13 +3,16 @@ export type Image = {
   metadata: MediaMetadata;
 };
 
+export type Address = {
+  city?: string;
+  village?: string;
+  country: string;
+  state: string;
+};
+
 export type MediaMetadata = {
-  address: {
-    city?: string;
-    village?: string;
-    country: string;
-    state: string;
-  };
+  hash: string; // Act as an ID
+  location: Address;
   timestamp: number;
   device: string;
 };

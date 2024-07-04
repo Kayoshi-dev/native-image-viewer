@@ -38,6 +38,10 @@
 
               if (data !== "No data") {
                 const metadata = JSON.parse(data as string) as MediaMetadata;
+                // In metadata, address is a JSON string, so we need to parse it
+                if (typeof metadata.location === "string") {
+                  metadata.location = JSON.parse(metadata.location);
+                }
 
                 return { imagePath: fileSrc, metadata };
               }
