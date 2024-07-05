@@ -32,20 +32,11 @@
               // Here we keep the original path to the image, because it's used in the Rust Backend to get the metadata
               const originalImagePath = await path.join(dir, file.name);
               const fileSrc = convertFileSrc(originalImagePath);
-              const data = await invoke("get_metadata", {
+              const metadata = (await invoke("get_metadata", {
                 imagePath: originalImagePath,
-              });
+              })) as MediaMetadata;
 
-              if (data !== "No data") {
-                const metadata = JSON.parse(data as string) as MediaMetadata;
-                // In metadata, address is a JSON string, so we need to parse it
-                if (typeof metadata.location === "string") {
-                  metadata.location = JSON.parse(metadata.location);
-                }
-
-                return { imagePath: fileSrc, metadata };
-              }
-              return { imagePath: fileSrc, metadata: {} as MediaMetadata };
+              return { imagePath: fileSrc, metadata };
             } catch (error) {
               // Log the error and continue
               console.error(`Failed to process ${file.name}:`, error);
@@ -55,8 +46,6 @@
     ).filter((item) => item !== undefined);
 
     images = [...imagesWithMetadata];
-
-    console.log(images);
   };
 </script>
 

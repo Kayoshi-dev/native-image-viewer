@@ -45,11 +45,11 @@
       alt="truc"
       on:click={displayImageDetections}
     />
-    {#if $currentImage.metadata && $currentImage.metadata.address}
+    {#if $currentImage.metadata && $currentImage.metadata.location}
       <p class="fixed top-0 left-0 text-3xl text-white font-bold">
-        {$currentImage.metadata.address.city ||
-          $currentImage.metadata.address.village}, {$currentImage.metadata
-          .address.country}
+        {$currentImage.metadata.location.city ||
+          $currentImage.metadata.location.village}, {$currentImage.metadata
+          .location.country}
       </p>
     {/if}
     <p class="text-3xl"></p>

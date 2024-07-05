@@ -7,8 +7,34 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub struct ImageMetadata {
     hash: String,
-    location: Option<String>,
+    location: Option<Location>,
     device: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Location {
+    city: String,
+    village: String,
+    country: String,
+    state: String,
+}
+
+enum MyError {
+    HttpRequest(()),
+    JsonParse(()),
+    // Add more error types as needed
+}
+
+impl From<reqwest::Error> for MyError {
+    fn from(_err: reqwest::Error) -> MyError {
+        MyError::HttpRequest(())
+    }
+}
+
+impl From<serde_json::Error> for MyError {
+    fn from(_err: serde_json::Error) -> MyError {
+        MyError::JsonParse(())
+    }
 }
 
 // Use once_cell to create a static HTTP client, so we don't have to create a new one every time
@@ -34,7 +60,7 @@ pub fn convert_to_decimal(coordinate: String) -> Result<f64, &'static str> {
 }
 
 // Reverse geocode the latitude and longitude to get the location
-pub async fn reverse_geocode(latitude: f64, longitude: f64) -> Result<String, reqwest::Error> {
+async fn reverse_geocode(latitude: f64, longitude: f64) -> Result<Location, MyError> {
     println!("Doing reverse geocoding for {}, {}", latitude, longitude);
     // Need to improve this as it can send too many requests.
     let url = format!(
@@ -42,11 +68,26 @@ pub async fn reverse_geocode(latitude: f64, longitude: f64) -> Result<String, re
         latitude, longitude
     );
 
-    let response = HTTP_CLIENT.get(url).send().await?.text().await?;
+    let response: serde_json::Value = HTTP_CLIENT.get(url).send().await?.json().await?;
 
-    println!("Response: {:?}", response);
-
-    Ok(response.to_string())
+    Ok(Location {
+        city: response["address"]["city"]
+            .as_str()
+            .unwrap_or("")
+            .to_string(),
+        country: response["address"]["country"]
+            .as_str()
+            .unwrap_or("")
+            .to_string(),
+        state: response["address"]["state"]
+            .as_str()
+            .unwrap_or("")
+            .to_string(),
+        village: response["address"]["village"]
+            .as_str()
+            .unwrap_or("")
+            .to_string(),
+    })
 }
 
 #[tauri::command]
@@ -74,9 +115,9 @@ pub async fn get_metadata(image_path: String) -> Result<ImageMetadata, tauri::Er
     let hashed_image = hash_image_content(image_path).unwrap_or_default();
     println!("Hashed image: {:?}", hashed_image);
 
-    let mut location: Option<String> = None;
+    let mut location: Option<Location> = None;
 
-    if latitude.is_some() || longitude.is_some() {
+    if latitude.is_some() && longitude.is_some() {
         match (latitude, longitude) {
             (Some(Ok(lat)), Some(Ok(lon))) => {
                 location = reverse_geocode(lat, lon).await.ok();
